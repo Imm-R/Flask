@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  app:
+    build: ./app
+    container_name: myapp
+    command: gunicorn --bind 0.0.0.0:5000 app:app # WSGI server
+    environment:
+      - DATABASE_URL=postgresql://prod:422928@db:5432/articles
+    volumes:
+      - ./app:/app
+    expose:
+      - 5000
+    depends_on:
+      - db
+  db:
+    image: postgres:13-alpine
+    container_name: postgres
+    volumes:
+      - ./pg_db:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=prod
+      - POSTGRES_PASSWORD=passwd
+      - POSTGRES_DB=articles
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    depends_on:
+      - db
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=root@immr.ru
+      - PGADMIN_DEFAULT_PASSWORD=422928
+      - PGADMIN_LISTEN_ADDRESS=0.0.0.0
+      - PGADMIN_LISTEN_PORT=5555
+  nginx:
+    build: ./nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./static:/home/web/default/static
+    depends_on:
+      - app
+      - pgadmin
